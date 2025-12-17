@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Stop Signal Task</title>
+
+    <script src="jspsych/dist/jspsych.js"></script>
+
+    <script src="jspsych/dist/plugin-image-keyboard-response.js"></script>
+    <script src="jspsych/dist/plugin-html-keyboard-response.js"></script>
+    <script src="jspsych/dist/plugin-survey-html-form.js"></script>
+
+    <link href="jspsych/dist/jspsych.css" rel="stylesheet" />
+  </head>
+
+  <body></body>
+
+  <script>
+
+    var jsPsych = initJsPsych({
+    on_finish: function () {
+        jsPsych.data.get().localSave('csv', 'stop_signal_data.csv');
+    }
+    });
+
+    var get_trial_count = {
+      type: jsPsychSurveyHtmlForm,
+      html: `
+        <p>Enter number of trials:</p>
+        <input name="num_trials" type="number" required>
+      `,
+      on_finish: function (data) {
+        window.NUM_TRIALS = Number(data.response.num_trials);
+      }
+    };
+
+
+    var go_trial = {
+      type: jsPsychImageKeyboardResponse,
+
+      stimulus: function () {
+        if (Math.random() < 0.5) {
+          this.correct_key = 'f';
+          return "images/left_arrow.png";
+        } else {
+          this.correct_key = 'j';
+          return "images/right_arrow.png";
+        }
+      },
+
+      choices: ['f', 'j'],
+
+      on_finish: function (data) {
+        data.correct_key = this.correct_key;
+        data.correct = (data.response === data.correct_key);
+        data.trial_type = "go";
+      }
+    };
+
+
+    var stop_trial = {
+      type: jsPsychImageKeyboardResponse,
+      stimulus: "images/stop_signal.png",
+      choices: "NO_KEYS",
+      trial_duration: 3000,
+      data: {
+        trial_type: "stop"
+      }
+    };
+
+
+    var trial_sequence = [];
+
+    var build_trials = {
+      timeline: [],
+      on_timeline_start: function () {
+        for (let i = 1; i <= NUM_TRIALS; i++) {
+          if (i % 100 === 0) {
+            trial_sequence.push(stop_trial);
+          } else {
+            trial_sequence.push(go_trial);
+          }
+        }
+      }
+    };
+
+
+    jsPsych.run([
+      get_trial_count,
+      build_trials,
+      {
+        timeline: trial_sequence
+      }
+    ]);
+  </script>
+</html>
